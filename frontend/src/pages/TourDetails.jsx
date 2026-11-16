@@ -10,17 +10,61 @@ import Newsletter from '../shared/Newsletter'
 import useFetch from '../hooks/useFetch'
 import { BASE_URL } from '../utils/config'
 import { AuthContext } from '../context/AuthContext'
+import MultimediaSection from '../components/Multimedia/MultimediaSection'
 
 const TourDetails = () => {
    const { id } = useParams()
    const reviewMsgRef = useRef('')
    const [tourRating, setTourRating] = useState(null)
    const { user } = useContext(AuthContext)
+   const [canReview, setCanReview] = useState(false)
+   const [eligibilityMessage, setEligibilityMessage] = useState('')
+   const [eligibilityLoading, setEligibilityLoading] = useState(false)
 
    // fetch data from database
    const { data: tour, loading, error } = useFetch(`${BASE_URL}/tours/${id}`)
+   useEffect(() => {
+      const checkEligibility = async () => {
+         if (!user) {
+            setCanReview(false)
+            setEligibilityMessage('Please sign in to review this tour.')
+            return
+         }
 
-   const { photo, title, desc, price, reviews, city, address, distance, maxGroupSize } = tour
+         setEligibilityLoading(true)
+
+         try {
+            const res = await fetch(
+               `${BASE_URL}/review/eligibility/${id}`,
+               { credentials: 'include' }
+            )
+
+            const result = await res.json()
+
+            setCanReview(res.ok && result.canReview)
+            setEligibilityMessage(result.message)
+         } catch (error) {
+            setCanReview(false)
+            setEligibilityMessage('Unable to check review eligibility.')
+         } finally {
+            setEligibilityLoading(false)
+         }
+      }
+
+      checkEligibility()
+   }, [id, user])
+
+   const {
+      photo,
+      title,
+      desc,
+      price,
+      reviews = [],
+      city,
+      address,
+      distance,
+      maxGroupSize
+   } = tour || {}
 
    const { totalRating, avgRating } = calculateAvgRating(reviews)
 
@@ -28,6 +72,13 @@ const TourDetails = () => {
 
    const submitHandler = async e => {
       e.preventDefault()
+      if (!user) {
+         return alert('Please sign in to submit a review')
+      }
+
+      if (!tourRating) {
+         return alert('Please select a star rating')
+      }
       const reviewText = reviewMsgRef.current.value
 
       try {
@@ -54,6 +105,7 @@ const TourDetails = () => {
             return alert(result.message)
          }
          alert(result.message)
+         window.location.reload()
       } catch (error) {
          alert(error.message)
       }
@@ -95,28 +147,55 @@ const TourDetails = () => {
                            <h5>Description</h5>
                            <p>{desc}</p>
                         </div>
+                        <MultimediaSection
+                           photo={photo}
+                           title={title}
+                           city={city}
+                           category={tour?.category}
+                        />
 
                         {/* ============ TOUR REVIEWS SECTION START ============ */}
                         <div className="tour__reviews mt-4">
                            <h4>Reviews ({reviews?.length} reviews)</h4>
 
-                           <Form onSubmit={submitHandler}>
-                              <div className="d-flex align-items-center gap-3 mb-4 rating__group">
-                                 <span onClick={() => setTourRating(1)}>1 <i class='ri-star-s-fill'></i></span>
-                                 <span onClick={() => setTourRating(2)}>2 <i class='ri-star-s-fill'></i></span>
-                                 <span onClick={() => setTourRating(3)}>3 <i class='ri-star-s-fill'></i></span>
-                                 <span onClick={() => setTourRating(4)}>4 <i class='ri-star-s-fill'></i></span>
-                                 <span onClick={() => setTourRating(5)}>5 <i class='ri-star-s-fill'></i></span>
-                              </div>
+                           {eligibilityLoading ? (
+                              <p>Checking review eligibility...</p>
+                           ) : canReview ? (
+                              <Form onSubmit={submitHandler}>
+                                 <div className="d-flex align-items-center gap-3 mb-4 rating__group">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                       <span
+                                          key={star}
+                                          onClick={() => setTourRating(star)}
+                                          style={{
+                                             cursor: 'pointer',
+                                             color: star <= tourRating ? '#faa935' : '#999',
+                                             fontSize: '20px'
+                                          }}
+                                       >
+                                          <i className="ri-star-s-fill"></i>
+                                       </span>
+                                    ))}
+                                 </div>
 
-                              <div className="review__input">
-                                 <input type="text" ref={reviewMsgRef} placeholder='share your thoughts' required />
-                                 <button className='btn primary__btn text-white' type='submit'>
-                                    Submit
-                                 </button>
-                              </div>
-                           </Form>
-
+                                 <div className="review__input">
+                                    <input
+                                       type="text"
+                                       ref={reviewMsgRef}
+                                       placeholder="Share your thoughts"
+                                       required
+                                    />
+                                    <button
+                                       className="btn primary__btn text-white"
+                                       type="submit"
+                                    >
+                                       Submit
+                                    </button>
+                                 </div>
+                              </Form>
+                           ) : (
+                              <p className="mt-3">{eligibilityMessage}</p>
+                           )}
                            <ListGroup className='user__reviews'>
                               {
                                  reviews?.map(review => (

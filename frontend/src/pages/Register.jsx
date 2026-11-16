@@ -41,11 +41,16 @@ const Register = () => {
       });
       const result = await res.json();
 
-      if (!res.ok) {
-        alert(result.message);
-        setIsLoading(false);
-        return;
-      }
+    if (!res.ok) {
+      const errorMessage =
+        result.message ||
+        result.errors?.map((err) => err.msg).join("\n") ||
+        "Registration failed. Please try again.";
+
+      alert(errorMessage);
+      setIsLoading(false);
+      return;
+    }
 
       dispatch({ type: "REGISTER_SUCCESS" });
       setSuccessMsg("Registered successfully!");

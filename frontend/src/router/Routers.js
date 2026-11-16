@@ -26,7 +26,6 @@ const Routers = () => {
          <Route path='/tours/search' element={<SearchResultList/>} />
          <Route path='/forgot-password' element={<ForgotPassword/>} />
          <Route path='/reset-password/:token' element={<ResetPassword/>} />
-             <Route path='/reviews' element={<CustomerReviews />} />
 
       </Routes>
    )

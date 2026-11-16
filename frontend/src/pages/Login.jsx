@@ -65,14 +65,22 @@ const Login = () => {
       });
 
       const result = await res.json();
+
       if (!res.ok) {
-        alert(result.message);
+        alert(
+          result.message ||
+          result.errors?.map((err) => err.msg).join("\n") ||
+          "Login failed. Please try again."
+        );
+
+        dispatch({ type: "LOGIN_FAILURE", payload: result.message });
         setIsLoading(false);
+        return;
       }
-      console.log(result.data);
 
       dispatch({ type: "LOGIN_SUCCESS", payload: result.data });
-      navigate("/");
+      setIsLoading(false);
+      navigate("/home");
     } catch (err) {
       dispatch({ type: "LOGIN_FAILURE", payload: err.message });
       setIsLoading(false);

@@ -1,10 +1,17 @@
+
 import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
     productId: {
-      type: mongoose.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Tour",
+      required: true,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     username: {
       type: String,
@@ -13,13 +20,14 @@ const reviewSchema = new mongoose.Schema(
     reviewText: {
       type: String,
       required: true,
+      trim: true,
     },
     rating: {
       type: Number,
       required: true,
-      min: 0,
+      min: 1,
       max: 5,
-      default: 0,
+      required: true,
     },
   },
   { timestamps: true }

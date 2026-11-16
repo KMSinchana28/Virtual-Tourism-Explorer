@@ -14,7 +14,14 @@ const TourCard = ({ tour }) => {
       <div className='tour__card'>
          <Card>
             <div className="tour__img">
-               <img src={photo} alt="tour-img" />
+               <img
+                  src={photo}
+                  alt={title}
+                  loading="lazy"
+                  onError={(e) => {
+                     e.target.src = "/images/placeholder.jpg";
+                  }}
+               />
                {featured && <span>Featured</span>}
             </div>
 

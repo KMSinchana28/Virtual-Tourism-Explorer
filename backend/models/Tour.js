@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const tourSchema = new mongoose.Schema(
@@ -34,6 +35,13 @@ const tourSchema = new mongoose.Schema(
     maxGroupSize: {
       type: Number,
       required: true,
+    },
+
+    // Multimedia category
+    category: {
+      type: String,
+      enum: ["Beach", "Mountain", "Island", "Nature"],
+      default: "Nature",
     },
 
     reviews: [

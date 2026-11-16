@@ -29,7 +29,7 @@ const connect = async() => {
 
       console.log('MongoDB connected')
    } catch (error) {
-      console.log('MongoDB connected failed')
+      console.error('MongoDB connection error:', error)
    }
 }
 

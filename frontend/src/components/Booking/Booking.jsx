@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import './booking.css'
 import { Form, FormGroup, ListGroup, ListGroupItem, Button } from 'reactstrap'
 
@@ -15,19 +15,55 @@ const Booking = ({ tour, avgRating }) => {
    const [booking, setBooking] = useState({
       userId: user && user._id,
       userEmail: user && user.email,
+      tourId: tour._id,
       tourName: title,
       fullName: '',
       phone: '',
       guestSize: 1,
       bookAt: ''
    })
+   
+   const [availableSeats, setAvailableSeats] = useState(null);
+   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
-   const handleChange = e => {
-      setBooking(prev => ({ ...prev, [e.target.id]: e.target.value }))
-   }
+   useEffect(() => {
+      if (!booking.bookAt) {
+         setAvailableSeats(null);
+         return;
+      }
 
-   const serviceFee = 10
-   const totalAmount = Number(price) * Number(booking.guestSize) + Number(serviceFee)
+      const checkAvailability = async () => {
+         setAvailabilityLoading(true);
+
+         try {
+            const res = await fetch(
+               `${BASE_URL}/booking/availability/${tour._id}?date=${booking.bookAt}`
+            );
+
+            const result = await res.json();
+
+            if (!res.ok) {
+               throw new Error(result.message || 'Could not check seats');
+            }
+
+            setAvailableSeats(result.data.availableSeats);
+         } catch (error) {
+            setAvailableSeats(null);
+            alert(error.message);
+         } finally {
+            setAvailabilityLoading(false);
+         }
+      };
+
+      checkAvailability();
+   }, [booking.bookAt, tour._id]);
+
+      const handleChange = e => {
+         setBooking(prev => ({ ...prev, [e.target.id]: e.target.value }))
+      }
+
+      const serviceFee = 10
+      const totalAmount = Number(price) * Number(booking.guestSize) + Number(serviceFee)
 
    const handleClick = async e => {
       e.preventDefault()
@@ -81,11 +117,34 @@ const Booking = ({ tour, avgRating }) => {
                      onChange={handleChange} />
                </FormGroup>
                <FormGroup className='d-flex align-items-center gap-3'>
-                  <input type="date" placeholder='' id='bookAt' required
-                     onChange={handleChange} />
-                  <input type="number" placeholder='Guest' id='guestSize' required
-                     onChange={handleChange} />
-               </FormGroup>
+               <input
+                  type="date"
+                  id="bookAt"
+                  min={new Date().toLocaleDateString('en-CA')}
+                  required
+                  onChange={handleChange}
+               />
+
+               <input
+                  type="number"
+                  placeholder="Guests"
+                  id="guestSize"
+                  min="1"
+                  max={availableSeats === null ? tour.maxGroupSize : availableSeats}
+                  required
+                  onChange={handleChange}
+               />
+            </FormGroup>
+
+            {booking.bookAt && (
+               <p>
+                  {availabilityLoading
+                     ? 'Checking available seats...'
+                     : availableSeats !== null
+                        ? `${availableSeats} seats available for this date`
+                        : 'Availability could not be checked'}
+               </p>
+            )}
             </Form>
          </div>
          {/* =============== BOOKING FORM END ================ */}
@@ -95,9 +154,14 @@ const Booking = ({ tour, avgRating }) => {
          <div className="booking__bottom">
             <ListGroup>
                <ListGroupItem className='border-0 px-0'>
-                  <h5 className='d-flex align-items-center gap-1'>${price} <i class='ri-close-line'></i> 1 person</h5>
-                  <span> ${price}</span>
+                  <h5 className='d-flex align-items-center gap-1'>
+                     ${price} × {booking.guestSize} people
+                  </h5>
+                  <span>
+                     ${Number(price) * Number(booking.guestSize)}
+                  </span>
                </ListGroupItem>
+
                <ListGroupItem className='border-0 px-0'>
                   <h5>Service charge</h5>
                   <span>${serviceFee}</span>
